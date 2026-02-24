@@ -1,12 +1,19 @@
 version: 2
 updates:
-  - package-ecosystem: bundler
-    directory: /
+  - package-ecosystem: "bundler"
+    directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 5
-  - package-ecosystem: github-actions
-    directory: /
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+      rubocop:
+        patterns:
+          - "rubocop*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 5
