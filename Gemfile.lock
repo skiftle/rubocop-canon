@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rubocop-canon (0.1.0)
+    rubocop-canon (0.1.1)
       lint_roller (~> 1.1)
       rubocop (>= 1.75.0, < 2.0)
 
