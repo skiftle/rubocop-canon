@@ -16,8 +16,9 @@ Gem::Specification.new do |s|
 
   s.files = Dir['config/**/*', 'lib/**/*', 'LICENSE.txt', 'README.md']
   s.metadata = {
-    'homepage_uri'          => s.homepage,
-    'source_code_uri'       => 'https://github.com/skiftle/rubocop-canon',
+    'default_lint_roller_plugin' => 'RuboCop::Canon::Plugin',
+    'homepage_uri' => s.homepage,
     'rubygems_mfa_required' => 'true',
+    'source_code_uri' => 'https://github.com/skiftle/rubocop-canon',
   }
 end

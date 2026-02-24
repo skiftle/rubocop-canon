@@ -5,3 +5,49 @@ AllCops:
   NewCops: disable
   TargetRubyVersion: 3.2
   SuggestExtensions: false
+
+Canon/SortHash:
+  ShorthandsFirst: true
+
+Canon/SortKeywords:
+  Enabled: false
+
+Canon/SortMethodArguments:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Enabled: false
+
+Naming/FileName:
+  Exclude:
+    - 'lib/rubocop-canon.rb'
+
+Layout/LineLength:
+  Max: 150

@@ -80,7 +80,7 @@ RSpec.describe RuboCop::Cop::Canon::SortKeywords do
       expect_offense(<<~RUBY)
         name = 'test'
         attribute :foo, z: 1, name:, a: 2
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Sort keyword arguments alphabetically.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Sort keyword arguments alphabetically.
       RUBY
 
       expect_correction(<<~RUBY)

@@ -9,7 +9,7 @@ RSpec.describe RuboCop::Cop::Canon::KeywordShorthand do
     expect_offense(<<~RUBY)
       name = 'test'
       foo(name: name)
-          ^^^^^^^^^^ Use Ruby 3 keyword shorthand `name:` instead of `name: name`.
+          ^^^^^^^^^^ Canon/KeywordShorthand: Use Ruby 3 keyword shorthand `name:` instead of `name: name`.
     RUBY
 
     expect_correction(<<~RUBY)
@@ -22,7 +22,7 @@ RSpec.describe RuboCop::Cop::Canon::KeywordShorthand do
     expect_offense(<<~RUBY)
       name = 'test'
       { name: name }
-        ^^^^^^^^^^ Use Ruby 3 keyword shorthand `name:` instead of `name: name`.
+        ^^^^^^^^^^ Canon/KeywordShorthand: Use Ruby 3 keyword shorthand `name:` instead of `name: name`.
     RUBY
 
     expect_correction(<<~RUBY)
@@ -36,8 +36,8 @@ RSpec.describe RuboCop::Cop::Canon::KeywordShorthand do
       name = 'test'
       age = 25
       foo(name: name, age: age)
-          ^^^^^^^^^^ Use Ruby 3 keyword shorthand `name:` instead of `name: name`.
-                      ^^^^^^^^ Use Ruby 3 keyword shorthand `age:` instead of `age: age`.
+          ^^^^^^^^^^ Canon/KeywordShorthand: Use Ruby 3 keyword shorthand `name:` instead of `name: name`.
+                      ^^^^^^^^ Canon/KeywordShorthand: Use Ruby 3 keyword shorthand `age:` instead of `age: age`.
     RUBY
 
     expect_correction(<<~RUBY)
@@ -99,7 +99,7 @@ RSpec.describe RuboCop::Cop::Canon::KeywordShorthand do
     expect_offense(<<~RUBY)
       name = 'test'
       foo(name: name, other: 1) if condition
-          ^^^^^^^^^^ Use Ruby 3 keyword shorthand `name:` instead of `name: name`.
+          ^^^^^^^^^^ Canon/KeywordShorthand: Use Ruby 3 keyword shorthand `name:` instead of `name: name`.
     RUBY
 
     expect_correction(<<~RUBY)

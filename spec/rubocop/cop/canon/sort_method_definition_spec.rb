@@ -8,7 +8,7 @@ RSpec.describe RuboCop::Cop::Canon::SortMethodDefinition do
   it 'registers an offense for unsorted keyword arguments in def' do
     expect_offense(<<~RUBY)
       def foo(zebra:, alpha:)
-      ^^^ Sort keyword arguments alphabetically.
+      ^^^ Canon/SortMethodDefinition: Sort keyword arguments alphabetically.
       end
     RUBY
 
@@ -21,7 +21,7 @@ RSpec.describe RuboCop::Cop::Canon::SortMethodDefinition do
   it 'registers an offense for unsorted keyword arguments in defs' do
     expect_offense(<<~RUBY)
       def self.foo(zebra:, alpha:)
-      ^^^ Sort keyword arguments alphabetically.
+      ^^^ Canon/SortMethodDefinition: Sort keyword arguments alphabetically.
       end
     RUBY
 
@@ -70,7 +70,7 @@ RSpec.describe RuboCop::Cop::Canon::SortMethodDefinition do
   it 'preserves keyword arguments with defaults' do
     expect_offense(<<~RUBY)
       def foo(zebra: 'z', alpha: 'a')
-      ^^^ Sort keyword arguments alphabetically.
+      ^^^ Canon/SortMethodDefinition: Sort keyword arguments alphabetically.
       end
     RUBY
 
@@ -83,7 +83,7 @@ RSpec.describe RuboCop::Cop::Canon::SortMethodDefinition do
   it 'preserves positional arguments before keyword arguments' do
     expect_offense(<<~RUBY)
       def foo(bar, zebra:, alpha:)
-      ^^^ Sort keyword arguments alphabetically.
+      ^^^ Canon/SortMethodDefinition: Sort keyword arguments alphabetically.
       end
     RUBY
 
@@ -96,7 +96,7 @@ RSpec.describe RuboCop::Cop::Canon::SortMethodDefinition do
   it 'sorts three or more keyword arguments' do
     expect_offense(<<~RUBY)
       def foo(charlie:, alpha:, bravo:)
-      ^^^ Sort keyword arguments alphabetically.
+      ^^^ Canon/SortMethodDefinition: Sort keyword arguments alphabetically.
       end
     RUBY
 

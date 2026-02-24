@@ -18,7 +18,7 @@ RSpec.describe RuboCop::Cop::Canon::SortHash do
   it 'registers an offense for unsorted hash keys' do
     expect_offense(<<~RUBY)
       {b: 1, a: 2}
-      ^^^^^^^^^^^^^ Sort hash keys alphabetically.
+      ^^^^^^^^^^^^ Sort hash keys alphabetically.
     RUBY
 
     expect_correction(<<~RUBY)
@@ -78,7 +78,7 @@ RSpec.describe RuboCop::Cop::Canon::SortHash do
   it 'preserves spaces in single-line hash with braces' do
     expect_offense(<<~RUBY)
       { b: 1, a: 2 }
-      ^^^^^^^^^^^^^^^ Sort hash keys alphabetically.
+      ^^^^^^^^^^^^^^ Sort hash keys alphabetically.
     RUBY
 
     expect_correction(<<~RUBY)
@@ -101,7 +101,7 @@ RSpec.describe RuboCop::Cop::Canon::SortHash do
       expect_offense(<<~RUBY)
         name = 'test'
         {z: 1, name:, a: 2}
-        ^^^^^^^^^^^^^^^^^^^^ Sort hash keys alphabetically.
+        ^^^^^^^^^^^^^^^^^^^ Sort hash keys alphabetically.
       RUBY
 
       expect_correction(<<~RUBY)
@@ -124,7 +124,7 @@ RSpec.describe RuboCop::Cop::Canon::SortHash do
 
     it 'does not register an offense for excluded methods' do
       expect_no_offenses(<<~RUBY)
-        enum(status: {b: 1, a: 2})
+        enum b: 1, a: 2
       RUBY
     end
   end

@@ -9,7 +9,7 @@ RSpec.describe RuboCop::Cop::Canon::SortMethodArguments do
     RuboCop::Config.new(
       'Canon/SortMethodArguments' => {
         'Enabled' => true,
-        'Methods' => ['attr_reader', 'delegate'],
+        'Methods' => %w[attr_reader delegate],
       },
     )
   end
