@@ -1,0 +1,7 @@
+plugins:
+  - rubocop-canon
+
+AllCops:
+  NewCops: disable
+  TargetRubyVersion: 3.2
+  SuggestExtensions: false

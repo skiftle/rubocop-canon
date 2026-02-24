@@ -1,0 +1,29 @@
+Canon/KeywordShorthand:
+  Description: 'Use Ruby 3.1+ keyword shorthand where a local variable matches the key name.'
+  Enabled: true
+  VersionAdded: '0.1'
+
+Canon/SortHash:
+  Description: 'Sort hash keys alphabetically.'
+  Enabled: true
+  VersionAdded: '0.1'
+  ShorthandsFirst: false
+  ExcludeMethods: []
+
+Canon/SortKeywords:
+  Description: 'Sort keyword arguments in method calls alphabetically.'
+  Enabled: false
+  VersionAdded: '0.1'
+  ShorthandsFirst: false
+  Methods: []
+
+Canon/SortMethodArguments:
+  Description: 'Sort symbol arguments in method calls alphabetically.'
+  Enabled: false
+  VersionAdded: '0.1'
+  Methods: []
+
+Canon/SortMethodDefinition:
+  Description: 'Sort keyword arguments in method definitions alphabetically.'
+  Enabled: true
+  VersionAdded: '0.1'
