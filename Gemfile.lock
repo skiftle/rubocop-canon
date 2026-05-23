@@ -18,7 +18,7 @@ GEM
       addressable (~> 2.8)
       bigdecimal (>= 3.1, < 5)
     language_server-protocol (3.17.0.5)
-    lefthook (2.1.2)
+    lefthook (2.1.4)
     lint_roller (1.1.0)
     mcp (0.8.0)
       json-schema (>= 4.1)
