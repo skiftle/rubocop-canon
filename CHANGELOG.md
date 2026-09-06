@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.2.0...rubocop-canon/v0.2.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* autocorrect surplus phases in a block body ([56d1f31](https://github.com/skiftle/rubocop-canon/commit/56d1f317d491697815e837e2b77b522dd7aca998))
+* only group method names the config lists ([c1d31ca](https://github.com/skiftle/rubocop-canon/commit/c1d31ca91f7bd6399e0f6ba698d212d776b89a5c))
+
 ## [0.2.0](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.1.1...rubocop-canon/v0.2.0) (2026-09-06)
 
 
