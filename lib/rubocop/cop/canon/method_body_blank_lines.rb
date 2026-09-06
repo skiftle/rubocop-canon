@@ -15,15 +15,22 @@ module RuboCop
       # The list is empty by default, so the cop only removes until it is
       # configured.
       #
-      # Guard clauses group: two in a row take no blank line between them.
-      # The position after the last guard belongs to
-      # `Layout/EmptyLineAfterGuardClause`, so this cop leaves it alone — and
-      # recognises a guard by that cop's own definition: an `if` whose branch
-      # is a single-line `return`, `break`, `next`, `raise` or `fail`. A bare
-      # `raise` on its own line is a statement, not a guard.
+      # Guard clauses group by what they do: the guards that return sit
+      # together, the guards that raise sit together, and one blank line
+      # separates the two groups. The position after the last guard belongs
+      # to `Layout/EmptyLineAfterGuardClause`, so this cop leaves it alone —
+      # and recognises a guard by that cop's own definition: an `if` whose
+      # branch is a single-line `return`, `break`, `next`, `raise` or `fail`.
+      # A bare `raise` on its own line is a statement, not a guard. A guard
+      # whose branch spans several lines is a multiline statement to both
+      # cops, so this cop sets it apart.
       #
-      # A statement spanning several lines is always set apart by a blank
-      # line on each side, guards included.
+      # A statement spanning several lines — a heredoc counts — is always set
+      # apart by a blank line on each side, guards included.
+      #
+      # A method that rescues has several bodies: the statements it protects,
+      # each `rescue` clause, the `else` and the `ensure`. The rules apply
+      # inside each of them.
       #
       # An entry matches a method name anywhere in the call chain. Write it
       # dotted — `errors.add` — to match a receiver and method together, so
@@ -61,12 +68,24 @@ module RuboCop
       #
       #     order.items.sum(&:amount)
       #   end
+      #
+      #   # good — the guards that return and the guard that raises are two groups
+      #   def resolve(name)
+      #     return nil if name.nil?
+      #     return name if name.is_a?(Array)
+      #
+      #     raise ArgumentError, "#{name} not found" unless enums.key?(name)
+      #
+      #     enums.fetch(name)
+      #   end
       class MethodBodyBlankLines < Base
         extend AutoCorrector
         include BlankLineHelp
 
         MSG_EXTRA = 'Remove the blank line inside the method body.'
         MSG_MISSING = 'Add a blank line around the standalone call.'
+        MSG_MIXED_GUARDS = 'Add a blank line between a guard that returns and a guard that raises.'
+        CLAUSE_TYPES = %i[ensure rescue resbody].freeze
         JUMP_METHODS = %i[raise fail].freeze
 
         def on_def(node)
@@ -80,9 +99,24 @@ module RuboCop
         private
 
         def check_method_body(node)
-          statements = body_statements(node)
-          return if statements.size < 2
+          statement_lists(node.body).each { |statements| check_statements(statements) }
+        end
 
+        def statement_lists(node)
+          return [] if node.nil?
+          return [statements(node)] unless CLAUSE_TYPES.include?(node.type)
+
+          clause_bodies(node).flat_map { |body| statement_lists(body) }
+        end
+
+        def clause_bodies(node)
+          return [node.children.first, node.branch] if node.ensure_type?
+          return [node.body] if node.resbody_type?
+
+          [node.body, *node.resbody_branches, node.else_branch]
+        end
+
+        def check_statements(statements)
           statements.each_cons(2) do |previous, following|
             next if guard_boundary?(previous, following)
 
@@ -93,12 +127,14 @@ module RuboCop
         def guard_boundary?(previous, following)
           return false unless guard?(previous)
 
-          !guard?(following)
+          !contains_guard?(following)
         end
 
         def check_gap(previous, following)
           if multiline_pair?(previous, following)
             require_blank_line(previous, following, MSG_MULTILINE)
+          elsif mixed_guards?(previous, following)
+            require_blank_line(previous, following, MSG_MIXED_GUARDS)
           elsif separated_pair?(previous, following)
             require_blank_line(previous, following, MSG_MISSING)
           else
@@ -125,7 +161,23 @@ module RuboCop
           chain.each_cons(2).any? { |pair| pair.join('.') == name }
         end
 
+        def mixed_guards?(previous, following)
+          return false unless guard?(previous)
+          return false unless guard?(following)
+
+          raising_guard?(previous) != raising_guard?(following)
+        end
+
         def guard?(node)
+          return false unless node.if_type?
+
+          branch = node.if_branch
+          return false if branch.nil?
+
+          branch.guard_clause?
+        end
+
+        def contains_guard?(node)
           return false unless node.if_type?
 
           branch = node.if_branch
@@ -143,6 +195,13 @@ module RuboCop
           return false unless node.receiver.nil?
 
           JUMP_METHODS.include?(node.method_name)
+        end
+
+        def raising_guard?(node)
+          jump = node.if_branch
+          jump = jump.rhs if jump.operator_keyword?
+
+          jump.send_type?
         end
 
         def separated_methods

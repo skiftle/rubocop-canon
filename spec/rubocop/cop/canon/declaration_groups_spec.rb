@@ -90,14 +90,38 @@ RSpec.describe RuboCop::Cop::Canon::DeclarationGroups do
     RUBY
   end
 
-  it 'does not register an offense between two constants' do
-    expect_no_offenses(<<~RUBY)
+  it 'registers an offense for a blank line between two constants' do
+    expect_offense(<<~RUBY)
+      class Shift
+        AND = :AND
+
+      ^{} Remove the blank line between declarations of the same group.
+        OR = :OR
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
       class Shift
         AND = :AND
         OR = :OR
+      end
+    RUBY
+  end
 
-        EQUALITY = %i[eq].freeze
-        COMPARISON = %i[gt lt].freeze
+  it 'registers an offense for a call right after a constant' do
+    expect_offense(<<~RUBY)
+      class Shift
+        KINDS = %i[cleaning inspection].freeze
+        belongs_to :site
+        ^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      class Shift
+        KINDS = %i[cleaning inspection].freeze
+
+        belongs_to :site
       end
     RUBY
   end
@@ -221,33 +245,168 @@ RSpec.describe RuboCop::Cop::Canon::DeclarationGroups do
     RUBY
   end
 
-  it 'does not register an offense for method names the config does not list' do
-    expect_no_offenses(<<~RUBY)
+  it 'treats every unlisted method name as its own group' do
+    expect_offense(<<~RUBY)
       class Filtering < Capability::Base
         capability_name :filtering
         request_transformer RequestTransformer
-        api_builder APIBuilder
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
+
         operation Operation
+
+      ^{} Remove the blank line between declarations of the same group.
+        operation OtherOperation
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      class Filtering < Capability::Base
+        capability_name :filtering
+
+        request_transformer RequestTransformer
+
+        operation Operation
+        operation OtherOperation
       end
     RUBY
   end
 
-  it 'does not register an offense between a listed and an unlisted name' do
-    expect_no_offenses(<<~RUBY)
+  it 'registers an offense between a listed and an unlisted name' do
+    expect_offense(<<~RUBY)
       class Shift < ApplicationRecord
-        include Publishable
         belongs_to :site
+        encrypts :notes
+        ^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      class Shift < ApplicationRecord
+        belongs_to :site
+
+        encrypts :notes
       end
     RUBY
   end
 
-  it 'does not register an offense for a body holding non-declarations' do
-    expect_no_offenses(<<~RUBY)
+  it 'has no opinion beside a non-declaration and checks the rest of the body' do
+    expect_offense(<<~RUBY)
       class Shift
         result = compute
         belongs_to :site
+        validates :starts_at, presence: true
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
       end
     RUBY
+
+    expect_correction(<<~RUBY)
+      class Shift
+        result = compute
+        belongs_to :site
+
+        validates :starts_at, presence: true
+      end
+    RUBY
+  end
+
+  it 'treats a call on self as a declaration' do
+    expect_offense(<<~RUBY)
+      class Shift < ApplicationRecord
+        self.table_name = 'shifts'
+        belongs_to :site
+        ^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      class Shift < ApplicationRecord
+        self.table_name = 'shifts'
+
+        belongs_to :site
+      end
+    RUBY
+  end
+
+  it 'checks a singleton class body' do
+    expect_offense(<<~RUBY)
+      class Shift
+        class << self
+          attr_reader :registry
+          def register(shift)
+          ^^^^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
+            registry << shift
+          end
+        end
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      class Shift
+        class << self
+          attr_reader :registry
+
+          def register(shift)
+            registry << shift
+          end
+        end
+      end
+    RUBY
+  end
+
+  it 'registers an offense inside a block nested in a DSL block' do
+    expect_offense(<<~RUBY)
+      module Publishable
+        included do
+          with_options presence: true do
+            validates :starts_at
+            validates :ends_at
+            belongs_to :site
+            ^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
+          end
+        end
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      module Publishable
+        included do
+          with_options presence: true do
+            validates :starts_at
+            validates :ends_at
+
+            belongs_to :site
+          end
+        end
+      end
+    RUBY
+  end
+
+  it 'leaves a block with a receiver alone' do
+    expect_no_offenses(<<~RUBY)
+      class Shift
+        Registry.configure do
+          operation Operation
+
+          operation OtherOperation
+        end
+      end
+    RUBY
+  end
+
+  context 'without configuration' do
+    let(:grouped_methods) { [] }
+
+    it 'groups the module inclusions and the attribute accessors' do
+      expect_no_offenses(<<~RUBY)
+        class Shift
+          include Publishable
+          extend Searchable
+
+          attr_reader :site
+          attr_writer :service
+        end
+      RUBY
+    end
   end
 
   it 'does not register an offense for a lambda body' do

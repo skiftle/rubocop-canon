@@ -310,6 +310,190 @@ RSpec.describe RuboCop::Cop::Canon::MethodBodyBlankLines do
     RUBY
   end
 
+  it 'registers an offense when a guard that raises follows a guard that returns without a blank line' do
+    expect_offense(<<~RUBY)
+      def resolve(name)
+        return nil if name.nil?
+        return name if name.is_a?(Array)
+        raise ArgumentError unless enums.key?(name)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Add a blank line between a guard that returns and a guard that raises.
+
+        enums.fetch(name)
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def resolve(name)
+        return nil if name.nil?
+        return name if name.is_a?(Array)
+
+        raise ArgumentError unless enums.key?(name)
+
+        enums.fetch(name)
+      end
+    RUBY
+  end
+
+  it 'does not register an offense for the blank line between a guard that raises and a guard that returns' do
+    expect_no_offenses(<<~RUBY)
+      def resolve(name)
+        raise ArgumentError if name.nil?
+
+        return name if name.is_a?(Array)
+
+        enums.fetch(name)
+      end
+    RUBY
+  end
+
+  it 'registers an offense for a blank line between two guards that raise' do
+    expect_offense(<<~RUBY)
+      def resolve(name)
+        raise ArgumentError if name.nil?
+
+      ^{} Remove the blank line inside the method body.
+        raise ArgumentError unless enums.key?(name)
+
+        enums.fetch(name)
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def resolve(name)
+        raise ArgumentError if name.nil?
+        raise ArgumentError unless enums.key?(name)
+
+        enums.fetch(name)
+      end
+    RUBY
+  end
+
+  it 'sets a guard whose branch spans several lines apart from the guard before it' do
+    expect_offense(<<~RUBY)
+      def total
+        return 0 if order.nil?
+        if order.empty?
+        ^^^^^^^^^^^^^^^ Add a blank line around the multiline statement.
+          return compute(
+            order,
+          )
+        end
+
+        order.items.sum(&:amount)
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def total
+        return 0 if order.nil?
+
+        if order.empty?
+          return compute(
+            order,
+          )
+        end
+
+        order.items.sum(&:amount)
+      end
+    RUBY
+  end
+
+  it 'sets a guard whose branch spans several lines apart from the statement after it' do
+    expect_offense(<<~RUBY)
+      def total
+        if order.nil?
+          return compute(
+            order,
+          )
+        end
+        order.items.sum(&:amount)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^ Add a blank line around the multiline statement.
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def total
+        if order.nil?
+          return compute(
+            order,
+          )
+        end
+
+        order.items.sum(&:amount)
+      end
+    RUBY
+  end
+
+  it 'sets a heredoc apart' do
+    expect_offense(<<~RUBY)
+      def query
+        sql = <<~SQL
+          SELECT 1
+        SQL
+        run(sql)
+        ^^^^^^^^ Add a blank line around the multiline statement.
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def query
+        sql = <<~SQL
+          SELECT 1
+        SQL
+
+        run(sql)
+      end
+    RUBY
+  end
+
+  it 'checks the statements a method protects and each rescue clause' do
+    expect_offense(<<~RUBY)
+      def call
+        order = build
+
+      ^{} Remove the blank line inside the method body.
+        run(order)
+      rescue StandardError
+        log_failure
+
+      ^{} Remove the blank line inside the method body.
+        raise
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def call
+        order = build
+        run(order)
+      rescue StandardError
+        log_failure
+        raise
+      end
+    RUBY
+  end
+
+  it 'checks an ensure clause' do
+    expect_offense(<<~RUBY)
+      def call
+        run
+      ensure
+        cleanup
+
+      ^{} Remove the blank line inside the method body.
+        release
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def call
+        run
+      ensure
+        cleanup
+        release
+      end
+    RUBY
+  end
+
   it 'does not register an offense when a comment sits between statements' do
     expect_no_offenses(<<~RUBY)
       def dispatch(reset)

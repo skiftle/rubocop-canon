@@ -3,19 +3,30 @@
 module RuboCop
   module Cop
     module Canon
-      # Enforces blank lines between declaration groups in a class, module or
-      # DSL block body.
+      # Enforces blank lines between declaration groups in a class, module,
+      # singleton class or DSL block body.
       #
-      # `GroupedMethods` is the whole specification: two declarations calling
-      # methods listed in the same group take no blank line between them, and
-      # two calling methods listed in different groups take exactly one. The
-      # cop says nothing about a method name it has not been given, so a DSL
-      # it does not know stays as its author wrote it.
+      # Every method name is its own group: two declarations calling the same
+      # method take no blank line between them, and two calling different
+      # methods take exactly one. `GroupedMethods` merges names into one
+      # group — `belongs_to` with `has_many`, `validate` with `validates`.
+      # Constants are a group of their own, and so are the two Ruby families
+      # RuboCop's layout cops already treat as one: `attr`, `attr_accessor`,
+      # `attr_reader` and `attr_writer`; `extend`, `include` and `prepend`.
       #
-      # A declaration spanning several lines, and any block, is a group of one
-      # whatever it calls, so it always stands apart from its neighbours.
-      # Everything else the cop has not been told about — an unlisted method
-      # name on one line, a constant — it leaves alone.
+      # A declaration is a call without a receiver or on `self`, or a constant
+      # assignment. A declaration spanning several lines, a block and a method
+      # definition are each a group of one whatever they call, so they always
+      # stand apart from their neighbours. Two definitions in a row belong to
+      # `Layout/EmptyLineBetweenDefs` and the lines around an access modifier
+      # to `Layout/EmptyLinesAroundAccessModifier`, so this cop leaves those
+      # alone. Anything else — an assignment, a conditional — it has no
+      # opinion about.
+      #
+      # A DSL block counts when it has no receiver and is a statement of a
+      # class, module or singleton class body, or of such a block: `included
+      # do`, `with_options ... do`, `action :index do`. A block passed as an
+      # argument — the lambda given to `scope` — is left alone.
       #
       # @example GroupedMethods: [[belongs_to, has_many], [validate, validates]]
       #   # bad
@@ -24,6 +35,9 @@ module RuboCop
       #
       #     has_many :shift_assignments, dependent: :destroy
       #     validates :starts_at, presence: true
+      #     scope :upcoming, -> { where(starts_at: Time.current..) }
+      #
+      #     scope :past, -> { where(starts_at: ...Time.current) }
       #   end
       #
       #   # good
@@ -32,12 +46,9 @@ module RuboCop
       #     has_many :shift_assignments, dependent: :destroy
       #
       #     validates :starts_at, presence: true
-      #   end
       #
-      #   # good — neither name is listed, so the cop leaves the body alone
-      #   class Filtering < Capability::Base
-      #     request_transformer RequestTransformer
-      #     api_builder APIBuilder
+      #     scope :upcoming, -> { where(starts_at: Time.current..) }
+      #     scope :past, -> { where(starts_at: ...Time.current) }
       #   end
       class DeclarationGroups < Base
         extend AutoCorrector
@@ -46,9 +57,9 @@ module RuboCop
         MSG_EXTRA = 'Remove the blank line between declarations of the same group.'
         MSG_MISSING = 'Add a blank line between declaration groups.'
         ACCESS_MODIFIERS = %i[private protected public module_function private_class_method].freeze
+        BODY_TYPES = %i[class module sclass].freeze
+        BUILT_IN_GROUPS = [%w[attr attr_accessor attr_reader attr_writer], %w[extend include prepend]].freeze
         DEFINITION_TYPES = %i[def defs].freeze
-        BLOCK_TYPES = %i[block numblock].freeze
-        STANDALONE_TYPES = %i[block numblock def defs].freeze
 
         def on_class(node)
           check_declarations(node)
@@ -58,8 +69,12 @@ module RuboCop
           check_declarations(node)
         end
 
+        def on_sclass(node)
+          check_declarations(node)
+        end
+
         def on_block(node)
-          return unless declaration_context?(node)
+          return unless declaration_block?(node)
 
           check_declarations(node)
         end
@@ -71,7 +86,6 @@ module RuboCop
         def check_declarations(node)
           statements = body_statements(node)
           return if statements.size < 2
-          return unless statements.all? { |statement| declaration?(statement) }
 
           statements.each_cons(2) do |previous, following|
             next if definitions?(previous, following)
@@ -112,35 +126,54 @@ module RuboCop
         end
 
         def standalone?(node)
-          return true if STANDALONE_TYPES.include?(node.type)
+          return true if BLOCK_TYPES.include?(node.type)
+          return true if definition?(node)
 
           multiline?(node)
         end
 
         def group_key(node)
-          return unless node.send_type?
+          return :constant if node.casgn_type?
+          return unless declaration_call?(node)
 
-          grouped_methods.index { |group| group.include?(node.method_name.to_s) }
+          name = node.method_name.to_s
+          group = groups.find { |members| members.include?(name) }
+          group.nil? ? name : group.first
         end
 
-        def declaration_context?(node)
-          enclosing = node.each_ancestor(:def, :defs, :class, :module).first
-          return false if enclosing.nil?
-          return true if enclosing.class_type?
+        def declaration_call?(node)
+          return false unless node.send_type?
+          return true if node.receiver.nil?
 
-          enclosing.module_type?
+          node.receiver.self_type?
         end
 
-        def declaration?(node)
-          return true if node.casgn_type?
+        def declaration_block?(node)
+          return false unless node.send_node.receiver.nil?
+
+          declaration_body?(node.parent)
+        end
+
+        def declaration_body?(node)
+          return false if node.nil?
+          return declaration_body?(node.parent) if node.begin_type?
+          return true if BODY_TYPES.include?(node.type)
+          return false unless BLOCK_TYPES.include?(node.type)
+
+          declaration_block?(node)
+        end
+
+        def definition?(node)
           return true if DEFINITION_TYPES.include?(node.type)
-          return node.send_node.receiver.nil? if BLOCK_TYPES.include?(node.type)
+          return false unless node.send_type?
 
-          node.send_type? && node.receiver.nil?
+          node.arguments.any? { |argument| DEFINITION_TYPES.include?(argument.type) }
         end
 
         def definitions?(previous, following)
-          DEFINITION_TYPES.include?(previous.type) && DEFINITION_TYPES.include?(following.type)
+          return false unless definition?(previous)
+
+          definition?(following)
         end
 
         def access_modifier?(node)
@@ -150,8 +183,8 @@ module RuboCop
           ACCESS_MODIFIERS.include?(node.method_name)
         end
 
-        def grouped_methods
-          @grouped_methods ||= Array(cop_config['GroupedMethods']).map { |group| Array(group).map(&:to_s) }
+        def groups
+          @groups ||= BUILT_IN_GROUPS + Array(cop_config['GroupedMethods']).map { |group| Array(group).map(&:to_s) }
         end
       end
     end

@@ -7,17 +7,23 @@ module RuboCop
       #
       # A cop mixing this in supplies the decision — how many blank lines a
       # pair of statements takes — and leaves the counting, the comment guard,
-      # the source ranges and the corrections here.
+      # the source ranges and the corrections here. A statement ends where its
+      # last heredoc ends, so a heredoc is part of the statement, not blank
+      # lines after it.
       module BlankLineHelp
         include RangeHelp
 
         BLOCK_TYPES = %i[block numblock].freeze
+        HEREDOC_TYPES = %i[str dstr xstr].freeze
         MSG_MULTILINE = 'Add a blank line around the multiline statement.'
 
         private
 
         def body_statements(node)
-          body = node.body
+          statements(node.body)
+        end
+
+        def statements(body)
           return [] if body.nil?
           return body.children if body.begin_type?
 
@@ -25,17 +31,25 @@ module RuboCop
         end
 
         def blank_lines_between(previous, following)
-          following.first_line - previous.last_line - 1
+          following.first_line - end_line(previous) - 1
         end
 
         def multiline?(node)
-          node.first_line != node.last_line
+          node.first_line != end_line(node)
         end
 
         def multiline_pair?(previous, following)
           return true if multiline?(previous)
 
           multiline?(following)
+        end
+
+        def end_line(node)
+          [node.last_line, *heredoc_end_lines(node)].max
+        end
+
+        def heredoc_end_lines(node)
+          node.each_node(*HEREDOC_TYPES).select(&:heredoc?).map { |heredoc| heredoc.loc.heredoc_end.line }
         end
 
         def require_blank_line(previous, following, message)
@@ -54,7 +68,7 @@ module RuboCop
 
         def comments_between?(previous, following)
           processed_source.comments.any? do |comment|
-            comment.loc.line >= previous.last_line && comment.loc.line < following.first_line
+            comment.loc.line >= end_line(previous) && comment.loc.line < following.first_line
           end
         end
 
@@ -66,7 +80,7 @@ module RuboCop
 
         def register_missing_blank_line(previous, following, message)
           add_offense(first_line_range(following), message:) do |corrector|
-            corrector.insert_after(line_range(previous.last_line), "\n")
+            corrector.insert_after(line_range(end_line(previous)), "\n")
           end
         end
 
@@ -94,11 +108,11 @@ module RuboCop
         end
 
         def blank_line_range(previous)
-          line_range(previous.last_line + 1)
+          line_range(end_line(previous) + 1)
         end
 
         def newline_range(previous)
-          range_between(line_range(previous.last_line).end_pos, line_range(previous.last_line + 1).end_pos)
+          range_between(line_range(end_line(previous)).end_pos, line_range(end_line(previous) + 1).end_pos)
         end
 
         def first_line_range(node)
