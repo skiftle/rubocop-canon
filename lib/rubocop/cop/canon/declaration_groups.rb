@@ -12,10 +12,10 @@ module RuboCop
       # cop says nothing about a method name it has not been given, so a DSL
       # it does not know stays as its author wrote it.
       #
-      # A block is a group of one whatever it calls, so a DSL block always
-      # stands apart from the declarations around it. Everything else the cop
-      # has not been told about — an unlisted method name, a constant — it
-      # leaves alone.
+      # A declaration spanning several lines, and any block, is a group of one
+      # whatever it calls, so it always stands apart from its neighbours.
+      # Everything else the cop has not been told about — an unlisted method
+      # name on one line, a constant — it leaves alone.
       #
       # @example GroupedMethods: [[belongs_to, has_many], [validate, validates]]
       #   # bad
@@ -112,7 +112,13 @@ module RuboCop
         end
 
         def standalone?(node)
-          STANDALONE_TYPES.include?(node.type)
+          return true if STANDALONE_TYPES.include?(node.type)
+
+          multiline?(node)
+        end
+
+        def multiline?(node)
+          node.first_line != node.last_line
         end
 
         def group_key(node)

@@ -44,14 +44,48 @@ RSpec.describe RuboCop::Cop::Canon::DeclarationGroups do
     RUBY
   end
 
-  it 'does not register an offense for a multiline call in the same group' do
-    expect_no_offenses(<<~RUBY)
+  it 'registers an offense for a multiline call without a blank line before it' do
+    expect_offense(<<~RUBY)
       class Shift
         scope :published, -> { where.not(published_at: nil) }
+        scope :overlapping,
+        ^^^^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
+              lambda { |from, to|
+                overlaps(:starts_at, :ends_at, from:, to:)
+              }
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      class Shift
+        scope :published, -> { where.not(published_at: nil) }
+
         scope :overlapping,
               lambda { |from, to|
                 overlaps(:starts_at, :ends_at, from:, to:)
               }
+      end
+    RUBY
+  end
+
+  it 'registers an offense for a single-line call after a multiline one' do
+    expect_offense(<<~RUBY)
+      class Shift
+        has_many :days,
+                 class_name: 'Day',
+                 dependent: :destroy
+        has_many :countries, through: :links
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      class Shift
+        has_many :days,
+                 class_name: 'Day',
+                 dependent: :destroy
+
+        has_many :countries, through: :links
       end
     RUBY
   end
