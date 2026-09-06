@@ -12,6 +12,7 @@ module RuboCop
         include RangeHelp
 
         BLOCK_TYPES = %i[block numblock].freeze
+        MSG_MULTILINE = 'Add a blank line around the multiline statement.'
 
         private
 
@@ -29,6 +30,26 @@ module RuboCop
 
         def multiline?(node)
           node.first_line != node.last_line
+        end
+
+        def multiline_pair?(previous, following)
+          return true if multiline?(previous)
+
+          multiline?(following)
+        end
+
+        def require_blank_line(previous, following, message)
+          return if comments_between?(previous, following)
+          return unless blank_lines_between(previous, following).zero?
+
+          register_missing_blank_line(previous, following, message)
+        end
+
+        def forbid_blank_line(previous, following, message)
+          return if comments_between?(previous, following)
+          return unless blank_lines_between(previous, following) == 1
+
+          register_extra_blank_line(previous, message)
         end
 
         def comments_between?(previous, following)

@@ -194,6 +194,101 @@ RSpec.describe RuboCop::Cop::Canon::MethodBodyBlankLines do
     RUBY
   end
 
+  it 'registers an offense for a blank line between two guard clauses' do
+    expect_offense(<<~RUBY)
+      def total
+        return 0 if order.nil?
+
+      ^{} Remove the blank line inside the method body.
+        return 0 if order.items.empty?
+
+        order.items.sum(&:amount)
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def total
+        return 0 if order.nil?
+        return 0 if order.items.empty?
+
+        order.items.sum(&:amount)
+      end
+    RUBY
+  end
+
+  it 'sets a multiline guard clause apart from the guard before it' do
+    expect_offense(<<~RUBY)
+      def total
+        return 0 if order.nil?
+        return 0 unless order.valid?(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Add a blank line around the multiline statement.
+          strict: true,
+        )
+
+        order.items.sum(&:amount)
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def total
+        return 0 if order.nil?
+
+        return 0 unless order.valid?(
+          strict: true,
+        )
+
+        order.items.sum(&:amount)
+      end
+    RUBY
+  end
+
+  it 'sets a multiline statement apart inside the body' do
+    expect_offense(<<~RUBY)
+      def dispatch(reset)
+        @user = find_user(
+          reset.user_id,
+        )
+        @url = reset_url(reset.token)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Add a blank line around the multiline statement.
+
+        mail(to: @user.email)
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      def dispatch(reset)
+        @user = find_user(
+          reset.user_id,
+        )
+
+        @url = reset_url(reset.token)
+
+        mail(to: @user.email)
+      end
+    RUBY
+  end
+
+  it 'leaves the gap between a guard clause and a bare raise to Layout' do
+    expect_no_offenses(<<~RUBY)
+      def validate_contract
+        return unless resource
+        return if contract.valid?
+        raise ContractError, contract.issues
+      end
+    RUBY
+  end
+
+  it 'does not remove the blank line Layout puts between a guard clause and a bare raise' do
+    expect_no_offenses(<<~RUBY)
+      def validate_contract
+        return unless resource
+        return if contract.valid?
+
+        raise ContractError, contract.issues
+      end
+    RUBY
+  end
+
   it 'does not register an offense for several guards' do
     expect_no_offenses(<<~RUBY)
       def total
