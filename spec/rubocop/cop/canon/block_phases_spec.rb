@@ -59,9 +59,80 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
     expect_offense(<<~RUBY)
       step 'totals the order' do
         order = build_order
-        ^^^^^^^^^^^^^^^^^^^ Use at most 3 phases in a block body.
 
+      ^{} Use at most 3 phases in a block body.
         add_item(order)
+
+        settle(order)
+
+        report order.total
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+        add_item(order)
+
+        settle(order)
+
+        report order.total
+      end
+    RUBY
+  end
+
+  it 'keeps only the last separator when several phases are surplus' do
+    expect_offense(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+
+      ^{} Use at most 3 phases in a block body.
+        add_item(order)
+
+      ^{} Use at most 3 phases in a block body.
+        apply_tax(order)
+
+        settle(order)
+
+        report order.total
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+        add_item(order)
+        apply_tax(order)
+
+        settle(order)
+
+        report order.total
+      end
+    RUBY
+  end
+
+  it 'keeps only the last leading separator when several are surplus' do
+    expect_offense(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+
+      ^{} Use at most 3 phases in a block body.
+        add_item(order)
+
+      ^{} Use at most 3 phases in a block body.
+        apply_tax(order)
+
+        settle(order)
+
+        report order.total
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+        add_item(order)
+        apply_tax(order)
 
         settle(order)
 

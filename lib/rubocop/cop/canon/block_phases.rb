@@ -15,6 +15,10 @@ module RuboCop
       # against the leftmost call in a chain. Both are empty by default, so
       # the cop does nothing until it is configured.
       #
+      # A body carrying more phases than `MaxPhases` allows keeps the last
+      # separator before the trailing phase and loses the earlier ones —
+      # everything ahead of the last leading statement is one phase.
+      #
       # @example Blocks: ['step'], TrailingMethods: ['report']
       #   # bad — no blank line opens the trailing phase
       #   step 'totals the order' do
@@ -91,12 +95,22 @@ module RuboCop
         end
 
         def check_phase_count(statements)
-          separators = statements.each_cons(2).count do |previous, following|
-            blank_lines_between(previous, following).positive?
-          end
-          return if separators < max_phases - 1
+          separators = leading_separators(statements)
+          return if separators.size < max_phases - 1
 
-          add_offense(statements.first, message: format(MSG_TOO_MANY_PHASES, max_phases:))
+          surplus = separators[0..-(max_phases - 1)]
+
+          surplus.each do |previous|
+            register_extra_blank_line(previous, format(MSG_TOO_MANY_PHASES, max_phases:))
+          end
+        end
+
+        def leading_separators(statements)
+          statements.each_cons(2).filter_map do |previous, following|
+            next if comments_between?(previous, following)
+
+            previous if blank_lines_between(previous, following) == 1
+          end
         end
 
         def detect_trailing_start(statements)
