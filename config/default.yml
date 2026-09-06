@@ -6,6 +6,12 @@ Canon/BlockPhases:
   MaxPhases: 3
   TrailingMethods: []
 
+Canon/DeclarationGroups:
+  Description: 'Separate declaration groups with one blank line and nothing inside a group.'
+  Enabled: false
+  VersionAdded: '0.2'
+  GroupedMethods: []
+
 Canon/KeywordShorthand:
   Description: 'Use Ruby 3.1+ keyword shorthand where a local variable matches the key name.'
   Enabled: true

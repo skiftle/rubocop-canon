@@ -7,6 +7,7 @@ Deterministic RuboCop cops that reduce Ruby code to canonical form. Given any in
 | Cop | What it does |
 |-----|-------------|
 | `Canon/BlockPhases` | A block body ends in one unbroken run of calls, opened by one blank line |
+| `Canon/DeclarationGroups` | One blank line between declaration groups, none inside a group |
 | `Canon/KeywordShorthand` | `foo(bar: bar)` becomes `foo(bar:)` |
 | `Canon/SortHash` | `{b: 1, a: 2}` becomes `{a: 2, b: 1}` |
 | `Canon/SortKeywords` | `method(z: 1, a: 2)` becomes `method(a: 2, z: 1)` |
@@ -39,9 +40,15 @@ Canon/BlockPhases:
   TrailingMethods:          # calls that make up the trailing phase (required)
     - expect
   MaxPhases: 3              # phases allowed before the trailing one
+
+Canon/DeclarationGroups:
+  GroupedMethods:           # method names that form one group
+    - [belongs_to, has_many, has_one]
+    - [validate, validates]
 ```
 
-`Canon/BlockPhases` does nothing without both lists.
+`Canon/BlockPhases` does nothing without both lists. `Canon/DeclarationGroups` treats every
+method name as its own group until `GroupedMethods` merges them.
 
 `Canon/SortHash` and the three sort cops accept:
 
