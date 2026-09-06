@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.5.0...rubocop-canon/v0.6.0) (2026-09-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* decide every blank line in method bodies and class bodies
+
+### Features
+
+* decide every blank line in method bodies and class bodies ([0af4383](https://github.com/skiftle/rubocop-canon/commit/0af438364093931227beb33d413182196eb8ae15))
+
 ## [0.5.0](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.4.0...rubocop-canon/v0.5.0) (2026-09-06)
 
 
