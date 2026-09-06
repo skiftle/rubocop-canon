@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.4.0...rubocop-canon/v0.5.0) (2026-09-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* group guard clauses and set multiline statements apart
+
+### Features
+
+* group guard clauses and set multiline statements apart ([3fa9043](https://github.com/skiftle/rubocop-canon/commit/3fa90439d07c21b8a06d3c6abf6f9c42c0c553cd))
+
 ## [0.4.0](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.3.0...rubocop-canon/v0.4.0) (2026-09-06)
 
 
