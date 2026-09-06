@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.3.0...rubocop-canon/v0.4.0) (2026-09-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* start the trailing phase at the first trailing call
+
+### Features
+
+* start the trailing phase at the first trailing call ([e1cd146](https://github.com/skiftle/rubocop-canon/commit/e1cd1466e547b717ee787279ef2190952b081e4a))
+
 ## [0.3.0](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.2.2...rubocop-canon/v0.3.0) (2026-09-06)
 
 
