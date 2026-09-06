@@ -6,8 +6,15 @@ AllCops:
   TargetRubyVersion: 3.2
   SuggestExtensions: false
 
+Canon/KeywordShorthand:
+  Enabled: true
+
 Canon/SortHash:
+  Enabled: true
   ShorthandsFirst: true
+
+Canon/SortMethodDefinition:
+  Enabled: true
 
 Canon/SortKeywords:
   Enabled: false

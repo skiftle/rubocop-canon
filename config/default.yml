@@ -14,7 +14,7 @@ Canon/DeclarationGroups:
 
 Canon/KeywordShorthand:
   Description: 'Use Ruby 3.1+ keyword shorthand where a local variable matches the key name.'
-  Enabled: true
+  Enabled: false
   VersionAdded: '0.1'
 
 Canon/MethodBodyBlankLines:
@@ -25,7 +25,7 @@ Canon/MethodBodyBlankLines:
 
 Canon/SortHash:
   Description: 'Sort hash keys alphabetically.'
-  Enabled: true
+  Enabled: false
   VersionAdded: '0.1'
   ShorthandsFirst: false
   ExcludeMethods: []
@@ -45,5 +45,5 @@ Canon/SortMethodArguments:
 
 Canon/SortMethodDefinition:
   Description: 'Sort keyword arguments in method definitions alphabetically.'
-  Enabled: true
+  Enabled: false
   VersionAdded: '0.1'

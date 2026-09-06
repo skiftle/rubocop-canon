@@ -78,7 +78,7 @@ Canon/SortMethodArguments:
     - delegate
 ```
 
-`Canon/SortKeywords` and `Canon/SortMethodArguments` are disabled by default. They require a `Methods` list to function.
+Every cop is disabled by default. Enable the ones you want in your `.rubocop.yml`.
 
 ## License
 
