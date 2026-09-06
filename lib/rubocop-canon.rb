@@ -3,6 +3,8 @@
 require 'rubocop'
 require_relative 'rubocop/canon/version'
 require_relative 'rubocop/canon/plugin'
+require_relative 'rubocop/cop/canon/blank_line_help'
+require_relative 'rubocop/cop/canon/block_phases'
 require_relative 'rubocop/cop/canon/keyword_shorthand'
 require_relative 'rubocop/cop/canon/sort_hash'
 require_relative 'rubocop/cop/canon/sort_keywords'

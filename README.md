@@ -6,6 +6,7 @@ Deterministic RuboCop cops that reduce Ruby code to canonical form. Given any in
 
 | Cop | What it does |
 |-----|-------------|
+| `Canon/BlockPhases` | A block body ends in one unbroken run of calls, opened by one blank line |
 | `Canon/KeywordShorthand` | `foo(bar: bar)` becomes `foo(bar:)` |
 | `Canon/SortHash` | `{b: 1, a: 2}` becomes `{a: 2, b: 1}` |
 | `Canon/SortKeywords` | `method(z: 1, a: 2)` becomes `method(a: 2, z: 1)` |
@@ -28,6 +29,19 @@ plugins:
 ```
 
 ## Configuration
+
+The blank-line cops are driven by name lists:
+
+```yaml
+Canon/BlockPhases:
+  Blocks:                   # only check blocks of these methods (required)
+    - it
+  TrailingMethods:          # calls that make up the trailing phase (required)
+    - expect
+  MaxPhases: 3              # phases allowed before the trailing one
+```
+
+`Canon/BlockPhases` does nothing without both lists.
 
 `Canon/SortHash` and the three sort cops accept:
 

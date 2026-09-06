@@ -1,3 +1,11 @@
+Canon/BlockPhases:
+  Description: 'Separate a block body into phases, ending in a trailing run of calls.'
+  Enabled: false
+  VersionAdded: '0.2'
+  Blocks: []
+  MaxPhases: 3
+  TrailingMethods: []
+
 Canon/KeywordShorthand:
   Description: 'Use Ruby 3.1+ keyword shorthand where a local variable matches the key name.'
   Enabled: true
