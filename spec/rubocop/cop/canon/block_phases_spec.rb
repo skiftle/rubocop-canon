@@ -54,14 +54,37 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
     RUBY
   end
 
-  it 'registers an offense for a blank line inside the arrange phase before the act' do
+  it 'registers an offense for a blank line inside the setup' do
     expect_offense(<<~RUBY)
       step 'totals the order' do
         order = build_order
 
-      ^{} Remove the blank line inside the arrange phase.
+      ^{} Remove the blank line inside the setup.
+        settle(order)
+
+        report order.total
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+        settle(order)
+
+        report order.total
+      end
+    RUBY
+  end
+
+  it 'removes every blank line inside the setup' do
+    expect_offense(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+
+      ^{} Remove the blank line inside the setup.
         add_item(order)
 
+      ^{} Remove the blank line inside the setup.
         settle(order)
 
         report order.total
@@ -72,7 +95,6 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
       step 'totals the order' do
         order = build_order
         add_item(order)
-
         settle(order)
 
         report order.total
@@ -80,122 +102,24 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
     RUBY
   end
 
-  it 'keeps only the last separator when several phases are surplus' do
+  it 'treats an attribute setter like any other setup statement' do
     expect_offense(<<~RUBY)
       step 'totals the order' do
-        order = build_order
+        order.currency = :sek
 
-      ^{} Remove the blank line inside the arrange phase.
-        add_item(order)
+      ^{} Remove the blank line inside the setup.
+        order.total = 100
 
-      ^{} Remove the blank line inside the arrange phase.
-        apply_tax(order)
-
-        settle(order)
-
-        report order.total
+        report order
       end
     RUBY
 
     expect_correction(<<~RUBY)
       step 'totals the order' do
-        order = build_order
-        add_item(order)
-        apply_tax(order)
+        order.currency = :sek
+        order.total = 100
 
-        settle(order)
-
-        report order.total
-      end
-    RUBY
-  end
-
-  it 'keeps only the separator before the act' do
-    expect_offense(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
-
-      ^{} Remove the blank line inside the arrange phase.
-        add_item(order)
-
-      ^{} Remove the blank line inside the arrange phase.
-        apply_tax(order)
-
-        settle(order)
-
-        report order.total
-      end
-    RUBY
-
-    expect_correction(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
-        add_item(order)
-        apply_tax(order)
-
-        settle(order)
-
-        report order.total
-      end
-    RUBY
-  end
-
-  it 'registers an offense for a blank line before an assignment that ends the arrange phase' do
-    expect_offense(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
-
-      ^{} Remove the blank line inside the arrange phase.
-        total = order.total
-
-        report total
-      end
-    RUBY
-
-    expect_correction(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
-        total = order.total
-
-        report total
-      end
-    RUBY
-  end
-
-  it 'collapses every separator when the arrange phase ends in an assignment' do
-    expect_offense(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
-
-      ^{} Remove the blank line inside the arrange phase.
-        add_item(order)
-
-      ^{} Remove the blank line inside the arrange phase.
-        total = order.total
-
-        report total
-      end
-    RUBY
-
-    expect_correction(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
-        add_item(order)
-        total = order.total
-
-        report total
-      end
-    RUBY
-  end
-
-  it 'does not register an offense for an act phase ending in a call' do
-    expect_no_offenses(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
-
-        settle(order)
-
-        report order.total
+        report order
       end
     RUBY
   end
@@ -252,16 +176,67 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
     RUBY
   end
 
-  it 'does not register an offense for a multiline statement already set apart' do
+  it 'treats everything from the first trailing call on as the trailing phase' do
     expect_no_offenses(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
+      step 'lists the orders' do
+        fetch_orders
 
-        total = order.total(
-          currency: :sek,
-        )
+        report status
+        body = parse_body
+        reload_orders
+        report body
+      end
+    RUBY
+  end
 
-        report total
+  it 'registers an offense for a blank line around a call inside the trailing phase' do
+    expect_offense(<<~RUBY)
+      step 'lists the orders' do
+        report status
+        reload_orders
+
+      ^{} Remove the blank line inside the trailing phase.
+        report body
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'lists the orders' do
+        report status
+        reload_orders
+        report body
+      end
+    RUBY
+  end
+
+  it 'registers an offense for blank lines around a wedged assignment' do
+    expect_offense(<<~RUBY)
+      step 'lists the orders' do
+        report status
+
+      ^{} Remove the blank line inside the trailing phase.
+        body = parse_body
+
+      ^{} Remove the blank line inside the trailing phase.
+        report body
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'lists the orders' do
+        report status
+        body = parse_body
+        report body
+      end
+    RUBY
+  end
+
+  it 'starts the trailing phase at the first trailing call, not at a preceding assignment' do
+    expect_offense(<<~RUBY)
+      step 'lists the orders' do
+        body = parse_body
+        report body
+        ^^^^^^^^^^^ Add a blank line before the trailing phase.
       end
     RUBY
   end
@@ -286,21 +261,10 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
     RUBY
   end
 
-  it 'does not register an offense for two phases' do
+  it 'does not register an offense for a canonical body' do
     expect_no_offenses(<<~RUBY)
       step 'totals the order' do
         order = build_order
-
-        report order.total
-      end
-    RUBY
-  end
-
-  it 'does not register an offense for three phases' do
-    expect_no_offenses(<<~RUBY)
-      step 'totals the order' do
-        order = build_order
-
         settle(order)
 
         report order.total
