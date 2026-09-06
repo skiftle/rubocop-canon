@@ -9,6 +9,7 @@ Deterministic RuboCop cops that reduce Ruby code to canonical form. Given any in
 | `Canon/BlockPhases` | A block body ends in one unbroken run of calls, opened by one blank line |
 | `Canon/DeclarationGroups` | One blank line between declaration groups, none inside a group |
 | `Canon/KeywordShorthand` | `foo(bar: bar)` becomes `foo(bar:)` |
+| `Canon/MethodBodyBlankLines` | One blank line around a method body's standalone calls, none anywhere else |
 | `Canon/SortHash` | `{b: 1, a: 2}` becomes `{a: 2, b: 1}` |
 | `Canon/SortKeywords` | `method(z: 1, a: 2)` becomes `method(a: 2, z: 1)` |
 | `Canon/SortMethodArguments` | `attr_reader :z, :a` becomes `attr_reader :a, :z` |
@@ -45,10 +46,17 @@ Canon/DeclarationGroups:
   GroupedMethods:           # method names that form one group
     - [belongs_to, has_many, has_one]
     - [validate, validates]
+
+Canon/MethodBodyBlankLines:
+  SeparatedMethods:         # calls that take a blank line beside them
+    - expose
+    - mail
+    - errors.add            # dotted: matches a receiver and method together
 ```
 
 `Canon/BlockPhases` does nothing without both lists. `Canon/DeclarationGroups` treats every
-method name as its own group until `GroupedMethods` merges them.
+method name as its own group until `GroupedMethods` merges them. `Canon/MethodBodyBlankLines`
+only removes blank lines until `SeparatedMethods` says where they belong.
 
 `Canon/SortHash` and the three sort cops accept:
 

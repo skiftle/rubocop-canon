@@ -17,6 +17,12 @@ Canon/KeywordShorthand:
   Enabled: true
   VersionAdded: '0.1'
 
+Canon/MethodBodyBlankLines:
+  Description: "One blank line around a method body's standalone calls, none anywhere else."
+  Enabled: false
+  VersionAdded: '0.2'
+  SeparatedMethods: []
+
 Canon/SortHash:
   Description: 'Sort hash keys alphabetically.'
   Enabled: true
