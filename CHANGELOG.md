@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.2.2...rubocop-canon/v0.3.0) (2026-09-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* derive the block phases from the statements
+
+### Features
+
+* derive the block phases from the statements ([d992dfe](https://github.com/skiftle/rubocop-canon/commit/d992dfe2f833b9df117757496a2cdb20370c65b5))
+
 ## [0.2.2](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.2.1...rubocop-canon/v0.2.2) (2026-09-06)
 
 
