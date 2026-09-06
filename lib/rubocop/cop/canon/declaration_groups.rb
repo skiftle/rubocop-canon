@@ -117,10 +117,6 @@ module RuboCop
           multiline?(node)
         end
 
-        def multiline?(node)
-          node.first_line != node.last_line
-        end
-
         def group_key(node)
           return unless node.send_type?
 

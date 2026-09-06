@@ -27,6 +27,10 @@ module RuboCop
           following.first_line - previous.last_line - 1
         end
 
+        def multiline?(node)
+          node.first_line != node.last_line
+        end
+
         def comments_between?(previous, following)
           processed_source.comments.any? do |comment|
             comment.loc.line >= previous.last_line && comment.loc.line < following.first_line

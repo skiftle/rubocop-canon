@@ -3,7 +3,6 @@ Canon/BlockPhases:
   Enabled: false
   VersionAdded: '0.2'
   Blocks: []
-  MaxPhases: 3
   TrailingMethods: []
 
 Canon/DeclarationGroups:

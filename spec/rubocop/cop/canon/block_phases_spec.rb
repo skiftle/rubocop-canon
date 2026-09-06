@@ -9,7 +9,6 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
     RuboCop::Config.new(
       'Canon/BlockPhases' => {
         'Blocks' => %w[step],
-        'MaxPhases' => 3,
         'TrailingMethods' => %w[report confirm],
       },
     )
@@ -55,12 +54,12 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
     RUBY
   end
 
-  it 'registers an offense for more phases than MaxPhases' do
+  it 'registers an offense for a blank line inside the arrange phase before the act' do
     expect_offense(<<~RUBY)
       step 'totals the order' do
         order = build_order
 
-      ^{} Use at most 3 phases in a block body.
+      ^{} Remove the blank line inside the arrange phase.
         add_item(order)
 
         settle(order)
@@ -86,10 +85,10 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
       step 'totals the order' do
         order = build_order
 
-      ^{} Use at most 3 phases in a block body.
+      ^{} Remove the blank line inside the arrange phase.
         add_item(order)
 
-      ^{} Use at most 3 phases in a block body.
+      ^{} Remove the blank line inside the arrange phase.
         apply_tax(order)
 
         settle(order)
@@ -111,15 +110,15 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
     RUBY
   end
 
-  it 'keeps only the last leading separator when several are surplus' do
+  it 'keeps only the separator before the act' do
     expect_offense(<<~RUBY)
       step 'totals the order' do
         order = build_order
 
-      ^{} Use at most 3 phases in a block body.
+      ^{} Remove the blank line inside the arrange phase.
         add_item(order)
 
-      ^{} Use at most 3 phases in a block body.
+      ^{} Remove the blank line inside the arrange phase.
         apply_tax(order)
 
         settle(order)
@@ -137,6 +136,132 @@ RSpec.describe RuboCop::Cop::Canon::BlockPhases do
         settle(order)
 
         report order.total
+      end
+    RUBY
+  end
+
+  it 'registers an offense for a blank line before an assignment that ends the arrange phase' do
+    expect_offense(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+
+      ^{} Remove the blank line inside the arrange phase.
+        total = order.total
+
+        report total
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+        total = order.total
+
+        report total
+      end
+    RUBY
+  end
+
+  it 'collapses every separator when the arrange phase ends in an assignment' do
+    expect_offense(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+
+      ^{} Remove the blank line inside the arrange phase.
+        add_item(order)
+
+      ^{} Remove the blank line inside the arrange phase.
+        total = order.total
+
+        report total
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+        add_item(order)
+        total = order.total
+
+        report total
+      end
+    RUBY
+  end
+
+  it 'does not register an offense for an act phase ending in a call' do
+    expect_no_offenses(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+
+        settle(order)
+
+        report order.total
+      end
+    RUBY
+  end
+
+  it 'registers an offense for a multiline statement without blank lines around it' do
+    expect_offense(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+        total = order.total(
+        ^^^^^^^^^^^^^^^^^^^^ Add a blank line around the multiline statement.
+          currency: :sek,
+        )
+        report total
+        ^^^^^^^^^^^^ Add a blank line before the trailing phase.
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+
+        total = order.total(
+          currency: :sek,
+        )
+
+        report total
+      end
+    RUBY
+  end
+
+  it 'registers an offense for a multiline call inside the trailing phase without blank lines around it' do
+    expect_offense(<<~RUBY)
+      step 'totals the order' do
+        report order.total
+        report(
+        ^^^^^^^ Add a blank line around the multiline statement.
+          order.currency,
+        )
+        report order.status
+        ^^^^^^^^^^^^^^^^^^^ Add a blank line around the multiline statement.
+      end
+    RUBY
+
+    expect_correction(<<~RUBY)
+      step 'totals the order' do
+        report order.total
+
+        report(
+          order.currency,
+        )
+
+        report order.status
+      end
+    RUBY
+  end
+
+  it 'does not register an offense for a multiline statement already set apart' do
+    expect_no_offenses(<<~RUBY)
+      step 'totals the order' do
+        order = build_order
+
+        total = order.total(
+          currency: :sek,
+        )
+
+        report total
       end
     RUBY
   end

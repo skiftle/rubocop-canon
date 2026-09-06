@@ -7,17 +7,21 @@ module RuboCop
       #
       # A body checked by this cop ends in a *trailing phase*: the run of
       # statements that call one of `TrailingMethods`. Exactly one blank line
-      # opens that run, no blank line splits it, and the statements before it
-      # form at most `MaxPhases` - 1 further phases.
+      # opens that run. Before it come an arrange phase and, when the last
+      # leading statement is a call rather than an assignment, an act phase
+      # opened by one blank line. Inside a phase no blank line is allowed.
+      #
+      # An assignment cannot end the act phase. When the last statement before
+      # the trailing phase assigns, there is no act: every leading statement
+      # belongs to one arrange phase.
+      #
+      # A statement spanning several lines is always set apart by a blank line
+      # on each side, whatever phase it is in.
       #
       # `Blocks` names the methods whose blocks are checked and
       # `TrailingMethods` the calls that make up the trailing phase, matched
       # against the leftmost call in a chain. Both are empty by default, so
       # the cop does nothing until it is configured.
-      #
-      # A body carrying more phases than `MaxPhases` allows keeps the last
-      # separator before the trailing phase and loses the earlier ones —
-      # everything ahead of the last leading statement is one phase.
       #
       # @example Blocks: ['step'], TrailingMethods: ['report']
       #   # bad — no blank line opens the trailing phase
@@ -26,21 +30,30 @@ module RuboCop
       #     report order.total
       #   end
       #
-      #   # bad — a blank line splits the trailing phase
+      #   # bad — an assignment is arrange, not act
       #   step 'totals the order' do
       #     order = build_order
       #
-      #     report order.total
+      #     total = order.total
       #
-      #     report order.currency
+      #     report total
       #   end
       #
       #   # good
       #   step 'totals the order' do
       #     order = build_order
+      #     total = order.total
+      #
+      #     report total
+      #   end
+      #
+      #   # good — the call is the act
+      #   step 'totals the order' do
+      #     order = build_order
+      #
+      #     settle(order)
       #
       #     report order.total
-      #     report order.currency
       #   end
       class BlockPhases < Base
         extend AutoCorrector
@@ -48,7 +61,10 @@ module RuboCop
 
         MSG_EXTRA = 'Remove the blank line inside the trailing phase.'
         MSG_MISSING = 'Add a blank line before the trailing phase.'
-        MSG_TOO_MANY_PHASES = 'Use at most %<max_phases>d phases in a block body.'
+        MSG_ARRANGE_SPLIT = 'Remove the blank line inside the arrange phase.'
+        MSG_ACT_UNSEPARATED = 'Add a blank line before the act.'
+        MSG_MULTILINE = 'Add a blank line around the multiline statement.'
+        ASSIGNMENT_TYPES = %i[lvasgn ivasgn cvasgn gvasgn masgn op_asgn or_asgn and_asgn].freeze
 
         def on_block(node)
           return unless configured_block?(node)
@@ -73,44 +89,59 @@ module RuboCop
 
         def check_trailing_phase(statements, trailing_start)
           statements[trailing_start..].each_cons(2) do |previous, following|
-            next if comments_between?(previous, following)
-            next if blank_lines_between(previous, following) != 1
-
-            register_extra_blank_line(previous, MSG_EXTRA)
+            if multiline_pair?(previous, following)
+              require_blank_line(previous, following, MSG_MULTILINE)
+            else
+              forbid_blank_line(previous, following, MSG_EXTRA)
+            end
           end
         end
 
         def check_leading_phases(statements, trailing_start)
           return if trailing_start.zero?
 
-          check_separator(statements[trailing_start - 1], statements[trailing_start])
-          check_phase_count(statements[..(trailing_start - 1)])
+          require_blank_line(statements[trailing_start - 1], statements[trailing_start], MSG_MISSING)
+          leading = statements[..(trailing_start - 1)]
+
+          leading.each_cons(2).with_index do |(previous, following), index|
+            check_leading_gap(leading, previous, following, index)
+          end
         end
 
-        def check_separator(previous, following)
+        def check_leading_gap(leading, previous, following, index)
+          if multiline_pair?(previous, following)
+            require_blank_line(previous, following, MSG_MULTILINE)
+          elsif assignment?(leading.last)
+            forbid_blank_line(previous, following, MSG_ARRANGE_SPLIT)
+          elsif index == leading.size - 2
+            require_blank_line(previous, following, MSG_ACT_UNSEPARATED)
+          else
+            forbid_blank_line(previous, following, MSG_ARRANGE_SPLIT)
+          end
+        end
+
+        def require_blank_line(previous, following, message)
           return if comments_between?(previous, following)
-          return if blank_lines_between(previous, following) == 1
+          return unless blank_lines_between(previous, following).zero?
 
-          register_missing_blank_line(previous, following, MSG_MISSING)
+          register_missing_blank_line(previous, following, message)
         end
 
-        def check_phase_count(statements)
-          separators = leading_separators(statements)
-          return if separators.size < max_phases - 1
+        def forbid_blank_line(previous, following, message)
+          return if comments_between?(previous, following)
+          return unless blank_lines_between(previous, following) == 1
 
-          surplus = separators[0..-(max_phases - 1)]
-
-          surplus.each do |previous|
-            register_extra_blank_line(previous, format(MSG_TOO_MANY_PHASES, max_phases:))
-          end
+          register_extra_blank_line(previous, message)
         end
 
-        def leading_separators(statements)
-          statements.each_cons(2).filter_map do |previous, following|
-            next if comments_between?(previous, following)
+        def multiline_pair?(previous, following)
+          return true if multiline?(previous)
 
-            previous if blank_lines_between(previous, following) == 1
-          end
+          multiline?(following)
+        end
+
+        def assignment?(node)
+          ASSIGNMENT_TYPES.include?(node.type)
         end
 
         def detect_trailing_start(statements)
@@ -144,10 +175,6 @@ module RuboCop
 
         def trailing_methods
           @trailing_methods ||= Array(cop_config['TrailingMethods']).map(&:to_s)
-        end
-
-        def max_phases
-          cop_config['MaxPhases']
         end
       end
     end

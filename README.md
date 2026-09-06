@@ -40,7 +40,6 @@ Canon/BlockPhases:
     - it
   TrailingMethods:          # calls that make up the trailing phase (required)
     - expect
-  MaxPhases: 3              # phases allowed before the trailing one
 
 Canon/DeclarationGroups:
   GroupedMethods:           # method names that form one group
