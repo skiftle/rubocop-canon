@@ -6,7 +6,7 @@ RSpec.describe RuboCop::Cop::Canon::DeclarationGroups do
   subject(:cop) { described_class.new(config) }
 
   let(:config) { RuboCop::Config.new('Canon/DeclarationGroups' => { 'GroupedMethods' => grouped_methods }) }
-  let(:grouped_methods) { [] }
+  let(:grouped_methods) { [%w[belongs_to has_many has_one], %w[validate validates], %w[attribute], %w[scope]] }
 
   it 'registers an offense for a missing blank line between groups' do
     expect_offense(<<~RUBY)
@@ -44,26 +44,26 @@ RSpec.describe RuboCop::Cop::Canon::DeclarationGroups do
     RUBY
   end
 
-  it 'registers an offense for a multiline declaration without a blank line before it' do
-    expect_offense(<<~RUBY)
+  it 'does not register an offense for a multiline call in the same group' do
+    expect_no_offenses(<<~RUBY)
       class Shift
         scope :published, -> { where.not(published_at: nil) }
         scope :overlapping,
-        ^^^^^^^^^^^^^^^^^^^ Add a blank line between declaration groups.
               lambda { |from, to|
                 overlaps(:starts_at, :ends_at, from:, to:)
               }
       end
     RUBY
+  end
 
-    expect_correction(<<~RUBY)
+  it 'does not register an offense between two constants' do
+    expect_no_offenses(<<~RUBY)
       class Shift
-        scope :published, -> { where.not(published_at: nil) }
+        AND = :AND
+        OR = :OR
 
-        scope :overlapping,
-              lambda { |from, to|
-                overlaps(:starts_at, :ends_at, from:, to:)
-              }
+        EQUALITY = %i[eq].freeze
+        COMPARISON = %i[gt lt].freeze
       end
     RUBY
   end
@@ -183,6 +183,26 @@ RSpec.describe RuboCop::Cop::Canon::DeclarationGroups do
         def publish
           true
         end
+      end
+    RUBY
+  end
+
+  it 'does not register an offense for method names the config does not list' do
+    expect_no_offenses(<<~RUBY)
+      class Filtering < Capability::Base
+        capability_name :filtering
+        request_transformer RequestTransformer
+        api_builder APIBuilder
+        operation Operation
+      end
+    RUBY
+  end
+
+  it 'does not register an offense between a listed and an unlisted name' do
+    expect_no_offenses(<<~RUBY)
+      class Shift < ApplicationRecord
+        include Publishable
+        belongs_to :site
       end
     RUBY
   end

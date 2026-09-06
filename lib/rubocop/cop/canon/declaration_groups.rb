@@ -6,37 +6,38 @@ module RuboCop
       # Enforces blank lines between declaration groups in a class, module or
       # DSL block body.
       #
-      # Two declarations belong to the same group when they call the same
-      # method and both fit on one line. A declaration spanning several lines,
-      # and any block, is a group of one. Groups are separated by exactly one
-      # blank line; declarations inside a group are not separated at all.
+      # `GroupedMethods` is the whole specification: two declarations calling
+      # methods listed in the same group take no blank line between them, and
+      # two calling methods listed in different groups take exactly one. The
+      # cop says nothing about a method name it has not been given, so a DSL
+      # it does not know stays as its author wrote it.
       #
-      # `GroupedMethods` merges method names that belong to one group.
+      # A block is a group of one whatever it calls, so a DSL block always
+      # stands apart from the declarations around it. Everything else the cop
+      # has not been told about — an unlisted method name, a constant — it
+      # leaves alone.
       #
-      # @example
+      # @example GroupedMethods: [[belongs_to, has_many], [validate, validates]]
       #   # bad
       #   class Shift < ApplicationRecord
-      #     belongs_to :service
-      #
       #     belongs_to :site
+      #
+      #     has_many :shift_assignments, dependent: :destroy
       #     validates :starts_at, presence: true
       #   end
       #
-      #   # good
-      #   class Shift < ApplicationRecord
-      #     belongs_to :service
-      #     belongs_to :site
-      #
-      #     validates :starts_at, presence: true
-      #   end
-      #
-      # @example GroupedMethods: [[belongs_to, has_many]]
       #   # good
       #   class Shift < ApplicationRecord
       #     belongs_to :site
       #     has_many :shift_assignments, dependent: :destroy
       #
       #     validates :starts_at, presence: true
+      #   end
+      #
+      #   # good — neither name is listed, so the cop leaves the body alone
+      #   class Filtering < Capability::Base
+      #     request_transformer RequestTransformer
+      #     api_builder APIBuilder
       #   end
       class DeclarationGroups < Base
         extend AutoCorrector
@@ -46,7 +47,8 @@ module RuboCop
         MSG_MISSING = 'Add a blank line between declaration groups.'
         ACCESS_MODIFIERS = %i[private protected public module_function private_class_method].freeze
         DEFINITION_TYPES = %i[def defs].freeze
-        DECLARATION_TYPES = %i[casgn block numblock def defs].freeze
+        BLOCK_TYPES = %i[block numblock].freeze
+        STANDALONE_TYPES = %i[block numblock def defs].freeze
 
         def on_class(node)
           check_declarations(node)
@@ -75,6 +77,7 @@ module RuboCop
             next if definitions?(previous, following)
             next if access_modifier?(previous)
             next if access_modifier?(following)
+            next unless grouped?(previous, following)
 
             check_gap(previous, following, expected_blank_lines(previous, following))
           end
@@ -92,26 +95,30 @@ module RuboCop
           register_missing_blank_line(previous, following, MSG_MISSING)
         end
 
+        def grouped?(previous, following)
+          return true if standalone?(previous)
+          return true if standalone?(following)
+          return false if group_key(previous).nil?
+
+          !group_key(following).nil?
+        end
+
         def expected_blank_lines(previous, following)
+          return 1 if standalone?(previous)
+          return 1 if standalone?(following)
           return 0 if group_key(previous) == group_key(following)
 
           1
         end
 
-        def group_key(node)
-          return node.object_id if multiline?(node)
-          return :constant if node.casgn_type?
-          return node.object_id unless node.send_type?
-
-          grouped_key(node.method_name)
+        def standalone?(node)
+          STANDALONE_TYPES.include?(node.type)
         end
 
-        def grouped_key(method_name)
-          name = method_name.to_s
-          group_index = grouped_methods.index { |group| group.include?(name) }
-          return name if group_index.nil?
+        def group_key(node)
+          return unless node.send_type?
 
-          group_index
+          grouped_methods.index { |group| group.include?(node.method_name.to_s) }
         end
 
         def declaration_context?(node)
@@ -123,7 +130,9 @@ module RuboCop
         end
 
         def declaration?(node)
-          return true if DECLARATION_TYPES.include?(node.type)
+          return true if node.casgn_type?
+          return true if DEFINITION_TYPES.include?(node.type)
+          return node.send_node.receiver.nil? if BLOCK_TYPES.include?(node.type)
 
           node.send_type? && node.receiver.nil?
         end
@@ -137,10 +146,6 @@ module RuboCop
           return false unless node.arguments.empty?
 
           ACCESS_MODIFIERS.include?(node.method_name)
-        end
-
-        def multiline?(node)
-          node.first_line != node.last_line
         end
 
         def grouped_methods
