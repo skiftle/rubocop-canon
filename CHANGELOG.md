@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.2.1...rubocop-canon/v0.2.2) (2026-09-06)
+
+
+### Bug Fixes
+
+* treat a multiline declaration as its own group ([ffb2028](https://github.com/skiftle/rubocop-canon/commit/ffb20282ea6d0aab4269026021bd18b215e7d699))
+
 ## [0.2.1](https://github.com/skiftle/rubocop-canon/compare/rubocop-canon/v0.2.0...rubocop-canon/v0.2.1) (2026-09-06)
 
 
